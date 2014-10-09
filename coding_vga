@@ -1,0 +1,121 @@
+module vga_driver(
+input wire clk,reset,
+output wire hsynch,vsynch,
+output [2:0] red,
+output [2:0] green,
+output [1:0] blue,
+output video_on);
+	 
+
+// defining constants
+localparam HD = 800; // horizontal display area
+localparam HF = 56; // front porch (right border)
+localparam HB = 64; //right porch (left border)
+localparam HR = 120; // horizontal retrace
+localparam VD = 600; // vertical display area
+localparam VF = 37; // front porch (bottom border)
+localparam VB = 23; // back porch (top border)
+localparam VR = 6; // vertical retrace
+
+
+
+//horizontal and vertical counter
+
+reg [10:0] h_count_reg;
+reg [10:0] v_count_reg ;
+reg v_sync_reg , h_sync_reg ;
+wire v_sync_next , h_sync_next ;
+
+wire h_end , v_end;
+
+
+
+always @ ( posedge clk , posedge reset)
+if (reset)
+begin
+v_count_reg <= 0;
+h_count_reg <= 0 ;
+v_sync_reg <= 1'b0;
+h_sync_reg <= 1'b0;
+end
+else
+begin
+v_count_reg <= v_count_next;
+h_count_reg <= h_count_next;
+v_sync_reg <= v_sync_next ;
+h_sync_reg <= h_sync_next ;
+end
+
+
+
+assign h_end = (h_count_reg==(HD+HF+HB+HR-1)) ;
+
+assign v_end = (v_count_reg==(VD+VF+VB+VR-1)) ;
+
+
+// below is the counter used to generate hsynch
+always@(posedge clk,posedge reset)
+//always @(posedge clk)
+  //50 Mhz pixel clock
+begin  
+  if(reset)
+	  h_count_next = h_count_reg;
+	  
+	  /*if(h_count_reg == h_end)
+      h_count_next = 0 ;
+   else
+      h_count_next = h_count_reg + 1;
+else	
+h_count_next = h_count_reg;*/
+
+else
+begin
+if(h_end)
+h_count_next = 0;
+else
+h_count_next = h_count_reg +1;
+end
+end
+
+ //counter used to generate vsynch
+always @(*)
+if(clk & h_count_reg == h_end)
+  if(v_count_reg == v_end)
+      v_count_next = 0;
+	   else
+      v_count_next = v_count_reg+1;
+ else
+	 v_count_next = v_count_reg;
+
+assign h_synch_next = ((h_count_reg>= HD+HF-1) && (h_count_reg<=HD+HF+HR+HB-1));
+assign v_synch_next = ((v_count>=VD+VF-1) && (v_count<= VD+VF+VR+VB-1));
+assign video_on = ((h_count <HD) && (v_count<VD));
+
+wire [9:0] pixel_x,pixel_y;
+assign pixel_x = (video_on)? h_count : 'b0;
+assign pixel_y = (video_on)? v_count : 'b0;
+
+
+reg [7:0] coloroutput;
+
+
+always @(posedge clk)
+if(~video_on)
+coloroutput <= 0;
+else
+begin
+if(pixel_y<160)
+coloroutput[7:5] <= 3'b111;
+else if(pixel_y<320)
+coloroutput[4:2] <= 3'b111;
+else
+coloroutput[1:0] <= 2'b11;
+end
+
+
+assign red = (video_on)?coloroutput[7:5] : 3'b000;
+assign green = (video_on)?coloroutput[4:2] : 3'b000;
+assign blue = (video_on)?coloroutput[1:0] : 3'b000;
+
+
+endmodule
