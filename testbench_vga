@@ -1,0 +1,47 @@
+module vga_tb;
+
+	// Inputs
+	reg clk;
+	reg reset;
+
+	// Outputs
+	wire hsynch;
+	wire vsynch;
+	wire [2:0] red;
+	wire [2:0] green;
+	wire [1:0] blue;
+	wire video_on;
+
+	// Instantiate the Unit Under Test (UUT)
+	anymodule uut (
+		.clk(clk), 
+		.reset(reset), 
+		.hsynch(hsynch), 
+		.vsynch(vsynch), 
+		.red(red), 
+		.green(green), 
+		.blue(blue), 
+		.video_on(video_on)
+	);
+
+	initial begin
+		// Initialize Inputs
+		clk = 0;
+		reset = 0;
+
+		// Wait 100 ns for global reset to finish
+		#100;
+        
+		// Add stimulus here
+
+	end
+	
+always  clk = #10 ~clk;
+
+//assignment of inputs 
+initial 
+begin
+reset<= 1'b1;
+reset <= #25 1'b0;
+end      
+endmodule
